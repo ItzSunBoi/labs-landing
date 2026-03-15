@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <title>Sun favicon</title>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8F4FF"/>
+      <stop offset="1" stop-color="#B8D9FF"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="132" y1="124" x2="372" y2="388" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#66B4FF"/>
+      <stop offset="1" stop-color="#2B6DFF"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="40" y="40" width="432" height="432" rx="112" fill="url(#bg)"/>
+  <rect x="40" y="40" width="432" height="432" rx="112" stroke="rgba(255,255,255,0.7)"/>
+
+  <path d="M349 147H214C180 147 156 168 156 196C156 224 176 241 214 248L293 262C333 269 356 289 356 322C356 362 322 388 270 388H145"
+    stroke="url(#ink)" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
