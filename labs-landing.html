@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sun Labs Gateway</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  :root {
+    --bg: radial-gradient(circle at center, #dfefff 0%, #cfe4ff 45%, #bed7fb 100%);
+    --panel: rgba(255, 255, 255, 0.55);
+    --text: #13385f;
+    --muted: rgba(19, 56, 95, 0.72);
+    --line: rgba(56, 132, 206, 0.35);
+    --centralFill: #5ea9ff;
+    --outerFill: rgba(94, 169, 255, 0.18);
+    --nodeStroke: rgba(43, 115, 189, 0.72);
+    --glow: rgba(94, 169, 255, 0.35);
+    --toggleBg: rgba(255,255,255,0.7);
+  }
+
+  body.dark {
+    --bg: radial-gradient(circle at center, #0d1b2d 0%, #0b1730 45%, #07101c 100%);
+    --panel: rgba(13, 28, 48, 0.5);
+    --text: #dff1ff;
+    --muted: rgba(223, 241, 255, 0.74);
+    --line: rgba(125, 196, 255, 0.26);
+    --centralFill: #5fb0ff;
+    --outerFill: rgba(95, 176, 255, 0.16);
+    --nodeStroke: rgba(148, 209, 255, 0.72);
+    --glow: rgba(95, 176, 255, 0.28);
+    --toggleBg: rgba(15, 28, 45, 0.82);
+  }
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  svg {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+  }
+
+  .link {
+    stroke: var(--line);
+    stroke-width: 2px;
+  }
+
+  .node {
+    cursor: pointer;
+  }
+
+  .node text {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    pointer-events: none;
+    fill: var(--text);
+  }
+
+  .topbar {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    text-align: center;
+    padding: 16px 22px;
+    min-width: min(92vw, 520px);
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(128, 184, 236, 0.25);
+    border-radius: 18px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.08);
+  }
+
+  .title {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 38px);
+    font-weight: 800;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .mode-toggle {
+    position: fixed;
+    top: 22px;
+    right: 22px;
+    z-index: 11;
+    border: 1px solid rgba(128, 184, 236, 0.28);
+    background: var(--toggleBg);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  }
+
+  .footer {
+    position: fixed;
+    bottom: 18px;
+    left: 20px;
+    z-index: 10;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+    border: 1px solid rgba(128, 184, 236, 0.2);
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 18px;
+    right: 20px;
+    z-index: 10;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    color: var(--muted);
+    font-size: 13px;
+    border: 1px solid rgba(128, 184, 236, 0.2);
+  }
+
+  @media (max-width: 640px) {
+    .topbar {
+      top: 14px;
+      min-width: calc(100vw - 24px);
+      padding: 14px 16px;
+    }
+
+    .mode-toggle {
+      top: auto;
+      bottom: 72px;
+      right: 16px;
+    }
+
+    .footer,
+    .hint {
+      max-width: calc(100vw - 32px);
+      font-size: 12px;
+    }
+
+    .hint {
+      bottom: 18px;
+      right: 16px;
+      left: auto;
+    }
+  }
+</style>
+</head>
+<body class="dark">
+  <div class="topbar">
+    <h1 class="title">Launch Pad</h1>
+    <div class="subtitle">
+      A gateway to Sun's projects, experiments, and assorted internet mischief.<br>
+      Click a node to open a destination.
+    </div>
+  </div>
+
+  <button class="mode-toggle" id="modeToggle">☀ Light mode</button>
+
+  <svg id="graph"></svg>
+
+  <div class="footer">
+    Built for labs.itzsunboi.dev<br>
+  </div>
+
+  <div class="hint">Drag nodes around if you feel like being decorative.</div>
+
+<script>
+const data = {
+  nodes: [
+    { id: 'hub', label: 'Sun\nLabs', central: true, url: 'https://labs.itzsunboi.dev' },
+    { id: 'open-vault', label: 'Open\nVault', url: 'https://openvault.suncoolserver.net' },
+    { id: 'shapez', label: 'Shapez', url: 'https://shapez.suncoolserver.net' },
+    { id: 'minecraft', label: 'Minecraft\nServer', url: 'https://www.suncoolserver.net' },
+    { id: 'portfolio', label: 'Portfolio', url: 'https://portfolio.itzsunboi.dev' }
+  ],
+  links: []
+};
+
+data.links = data.nodes
+  .filter(n => !n.central)
+  .map(n => ({ source: 'hub', target: n.id }));
+
+const svg = d3.select('#graph');
+let width = window.innerWidth;
+let height = window.innerHeight;
+
+svg.attr('width', width).attr('height', height);
+
+const simulation = d3.forceSimulation(data.nodes)
+  .force('link', d3.forceLink(data.links).id(d => d.id).distance(185).strength(0.55))
+  .force('charge', d3.forceManyBody().strength(-700))
+  .force('center', d3.forceCenter(width / 2, height / 2 + 24))
+  .force('collision', d3.forceCollide().radius(d => d.central ? 90 : 74))
+  .on('tick', ticked);
+
+const centerNode = data.nodes.find(n => n.central);
+simulation.on('tick.center', () => {
+  const spring = 0.012;
+  if (centerNode) {
+    centerNode.vx += (width / 2 - centerNode.x) * spring;
+    centerNode.vy += (height / 2 + 16 - centerNode.y) * spring;
+  }
+});
+
+const link = svg.selectAll('.link')
+  .data(data.links)
+  .enter()
+  .append('line')
+  .attr('class', 'link');
+
+const node = svg.selectAll('.node')
+  .data(data.nodes)
+  .enter()
+  .append('g')
+  .attr('class', 'node')
+  .call(
+    d3.drag()
+      .on('start', dragStarted)
+      .on('drag', dragged)
+      .on('end', dragEnded)
+  )
+  .on('click', (_, d) => {
+    if (d.url) window.location.href = d.url;
+  });
+
+node.append('text')
+  .attr('text-anchor', 'middle')
+  .style('font-family', 'Inter, system-ui, sans-serif')
+  .each(function(d) {
+    const text = d3.select(this);
+    const lines = d.label.split(/\n/);
+    lines.forEach((line, i) => {
+      text.append('tspan')
+        .text(line)
+        .attr('x', 0)
+        .attr('dy', i === 0 ? '0.35em' : '1.2em');
+    });
+  });
+
+node.each(function(d) {
+  const text = d3.select(this).select('text');
+  const box = text.node().getBBox();
+  d.box = box;
+});
+
+const padX = 18;
+const padY = 12;
+const corner = 16;
+
+node.insert('rect', 'text')
+  .attr('x', d => d.box.x - padX)
+  .attr('y', d => d.box.y - padY)
+  .attr('width', d => d.box.width + padX * 2)
+  .attr('height', d => d.box.height + padY * 2)
+  .attr('rx', corner)
+  .attr('ry', corner)
+  .attr('fill', d => d.central ? 'var(--centralFill)' : 'var(--outerFill)')
+  .attr('stroke', 'var(--nodeStroke)')
+  .attr('stroke-width', d => d.central ? 1.6 : 1.2)
+  .style('filter', 'drop-shadow(0 0 12px var(--glow))');
+
+node.on('mouseenter', function(_, d) {
+  d3.select(this).select('rect')
+    .transition()
+    .duration(160)
+    .attr('transform', 'scale(1.04)');
+})
+.on('mouseleave', function() {
+  d3.select(this).select('rect')
+    .transition()
+    .duration(160)
+    .attr('transform', 'scale(1)');
+});
+
+function ticked() {
+  link
+    .attr('x1', d => d.source.x)
+    .attr('y1', d => d.source.y)
+    .attr('x2', d => d.target.x)
+    .attr('y2', d => d.target.y);
+
+  node.attr('transform', d => `translate(${d.x},${d.y})`);
+}
+
+function dragStarted(event, d) {
+  if (!event.active) simulation.alphaTarget(0.25).restart();
+  d.fx = d.x;
+  d.fy = d.y;
+}
+
+function dragged(event, d) {
+  d.fx = event.x;
+  d.fy = event.y;
+}
+
+function dragEnded(event, d) {
+  if (!event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}
+
+window.addEventListener('resize', () => {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  svg.attr('width', width).attr('height', height);
+  simulation
+    .force('center', d3.forceCenter(width / 2, height / 2 + 24))
+    .alpha(0.25)
+    .restart();
+});
+
+const modeToggle = document.getElementById('modeToggle');
+const body = document.body;
+const storedTheme = localStorage.getItem('sunlabs-theme');
+if (storedTheme === 'light') body.classList.remove('dark');
+updateThemeButton();
+
+modeToggle.addEventListener('click', () => {
+  body.classList.toggle('dark');
+  localStorage.setItem('sunlabs-theme', body.classList.contains('dark') ? 'dark' : 'light');
+  updateThemeButton();
+});
+
+function updateThemeButton() {
+  modeToggle.textContent = body.classList.contains('dark') ? '☀ Light mode' : '🌙 Dark mode';
+}
+</script>
+</body>
+</html>
